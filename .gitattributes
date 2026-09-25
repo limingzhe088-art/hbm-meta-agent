@@ -51,6 +51,16 @@ LICENSE     text eol=lf
 *.tif       binary
 *.tiff      binary
 
+# ── Python 字节码：**永不入库、永不出包**────────────────────────────
+# ★ 教训（远端提交 78c8029）：用 GitHub 网页 "Add file → Upload files"
+#   会**完全无视 .gitignore**，把上传文件夹里的 `__pycache__/*.pyc` 一并提交。
+#   `.gitignore` 只能拦 `git add`，拦不住网页上传与 `git add -f`；
+#   而 `export-ignore` 是包级（archive / release tarball）过滤。
+#   代码级拦截见 validate.yml 的 C8 与 tests/ci_local.py 的第 7 步。
+__pycache__/  export-ignore
+*.py[cod]     export-ignore
+
 # ── 语言标注（GitHub 统计更准）──────────────────────────────────────
-*.py        linguist-language=Python
+# 注：属性按行依次赋值，同行避免重复声明同一属性，故分开写。
+*.py        linguist-language=Python -linguist-vendored
 *.md        linguist-documentation

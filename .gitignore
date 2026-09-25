@@ -5,7 +5,13 @@
 # =============================================================================
 
 # ── Python ───────────────────────────────────────────────────────────
+# ★ 教训（远端提交 78c8029）：GitHub 网页 "Upload files" **不读 .gitignore**，
+#   会把 `__pycache__/*.pyc` 一起提交。这里有规则只是第一道防线；
+#   第二道在 .gitattributes（export-ignore），第三道是 CI 的 C8 检查。
 __pycache__/
+**/__pycache__/
+**/__pycache__/*.py[cod]
+__pycache__/*.py[cod]
 *.py[cod]
 *$py.class
 *.so

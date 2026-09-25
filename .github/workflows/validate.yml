@@ -63,7 +63,8 @@ jobs:
             skills/S6-qc-audit-revision/scripts/dedup_screen.py \
             skills/S6-qc-audit-revision/scripts/sensitivity.py \
             skills/S6-qc-audit-revision/scripts/verify_dois.py \
-            skills/S6-qc-audit-revision/scripts/citation_crosswalk.py ; do
+            skills/S6-qc-audit-revision/scripts/citation_crosswalk.py \
+            tests/verify_repo_clean.py ; do
             run_one "$f"
           done
           echo "---- C1 失败数：$fails ----"
@@ -140,6 +141,15 @@ jobs:
             | grep -i '\.csv$' || echo "（无）"
           echo "---- C7 失败数：$fails ----"
           test "$fails" -eq 0
+
+      # ── C8：仓库洁净度（防网页上传绕过 .gitignore 的两类污染）────────
+      # 起因：远端提交 78c8029（GitHub 网页 "Add file → Upload files"）——
+      #   ① 提交了 shared/__pycache__/*.pyc 等 6 个字节码文件（网页上传不读 .gitignore）
+      #   ② 把 4 个 CSV 的行尾从 LF 变成 CRLF（会破坏跨平台"精确文本比较"断言）
+      # 检查对象是**版本库 blob**，不是工作区——只有查 blob 才看得见已提交的脏东西。
+      # 判定逻辑与本地 tests/ci_local.py 第 7 步共用 verify_repo_clean.py 同一套代码。
+      - name: "C8 · 仓库洁净度（字节码 / CRLF）"
+        run: python tests/verify_repo_clean.py
 
       # ── 上传失败时的诊断 ─────────────────────────────────────────
       - name: Diagnostics on failure

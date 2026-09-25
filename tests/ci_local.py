@@ -14,6 +14,7 @@ ci_local.py — 本地模拟 CI（在无 GitHub Actions 环境下预演 validate
   4  跨脚本一致性（tests/verify_consistency.py --skip-selftest）
   5  源码卫生：损坏字符探针 / 硬编码路径 / 口径兜底
   6  随包文件是否真的入库（★ 针对"磁盘有、仓库没有"的漏提交）
+  7  仓库内容洁净度（★ 针对"网页上传绕过 .gitignore"的两个典型污染）
 
 步骤 6 的由来（CI run #1 真实事故）
   自检在**开发机工作区**里跑，读的是磁盘上的文件；而 CI 在**全新克隆**里跑，
@@ -21,6 +22,12 @@ ci_local.py — 本地模拟 CI（在无 GitHub Actions 环境下预演 validate
   只豁免根目录，漏掉 `skills/<子技能>/templates/`），使 4 个模板 CSV 永不被提交。
   后果：本地 5/5 全绿，推上去 C1 立刻变红——**本地预演没能预测 CI**。
   本步骤把"文件到底在不在版本库里"变成显式断言，堵住这一类盲区。
+
+步骤 7 的由来（远端提交 78c8029 真实事故）
+  GitHub 网页 "Add file → Upload files" **不读 .gitignore**，把 `__pycache__/*.pyc`
+  一起提交了；同时网页上传把 4 个 CSV 的行尾从 LF 变成了 CRLF。
+  两者都会污染仓库与 Release 包。故此处直接检查**版本库内容**（git blob），
+  而不是工作区——只有查 blob 才能看见"已经提交进去的脏东西"。
 
 用法
   python tests/ci_local.py
@@ -58,6 +65,7 @@ SELFTEST_TARGETS = [
     "skills/S6-qc-audit-revision/scripts/sensitivity.py",
     "skills/S6-qc-audit-revision/scripts/verify_dois.py",
     "skills/S6-qc-audit-revision/scripts/citation_crosswalk.py",
+    "tests/verify_repo_clean.py",
 ]
 
 # 探针：损坏字符（见 agent/routing.md §2.6）
@@ -231,6 +239,33 @@ def step_shipped_files(verbose: bool) -> tuple[bool, list[str]]:
     return ok, notes
 
 
+# ── 步骤 7：仓库内容洁净度 ────────────────────────────────────────────
+# 检查的是**版本库 blob**，不是工作区：只有查 blob 才能看见已提交的脏东西。
+TEXT_SUFFIXES = {".py", ".md", ".yml", ".yaml", ".json", ".csv", ".tsv",
+                 ".cff", ".txt", ".toml", ".cfg", ".ini"}
+TEXT_EXACT = {".gitignore", ".gitattributes", "LICENSE"}
+_BYTECODE_MARKERS = ("__pycache__/", ".pyc", ".pyo", ".pyd")
+
+
+def step_repo_cleanliness(verbose: bool) -> tuple[bool, list[str]]:
+    """断言：版本库里没有字节码；文本文件在 blob 层面一律 LF。
+
+    判定逻辑集中在 tests/verify_repo_clean.py，本步骤只做调用——
+    使本地预演与 GitHub Actions 的 C8 走**同一套代码**，避免两处实现两套结论。
+    """
+    p = ROOT / "tests/verify_repo_clean.py"
+    if not p.exists():
+        return False, ["❌ MISSING tests/verify_repo_clean.py"]
+    r = subprocess.run([sys.executable, str(p)], cwd=str(ROOT),
+                       capture_output=True, timeout=180)
+    out = (r.stdout or b"").decode("utf-8", "replace")
+    notes = [ln for ln in out.splitlines()
+             if ln.startswith("✅") or ln.startswith("❌") or ln.startswith("      ")]
+    if r.returncode == 0 and not notes:
+        notes = ["✅ 洁净"]
+    return r.returncode == 0, notes
+
+
 STEPS = [
     ("1  全部脚本 --self-test", step_selftests),
     ("2  模板与实现一致性", step_gen_templates),
@@ -238,6 +273,7 @@ STEPS = [
     ("4  跨脚本一致性", step_consistency),
     ("5  源码卫生（探针/硬编码/兜底）", step_hygiene),
     ("6  随包文件已入库（防漏提交）", step_shipped_files),
+    ("7  仓库洁净度（防字节码/CRLF）", step_repo_cleanliness),
 ]
 
 
