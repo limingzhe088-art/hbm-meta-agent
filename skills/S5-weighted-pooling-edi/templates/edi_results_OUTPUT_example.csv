@@ -1,0 +1,11 @@
+record_id,sample_type,population_group,gm_summary,sample_size,route,edi_primary,edi_secondary,cross_check_rel_diff,status,flags,message,params
+R00001,Urine,Adults,32.580000,1200,urine,1.047214,1.046904,0.000296,OK,,,route=urine;path_a=creatinine_excretion;path_b=urine_volume;CE=1.35;V=1.4;CC=0.964;BW=60.0;ABS=0.7;source=ICRP89
+R00002,Urine,Pregnant,12.450000,800,urine,0.377946,0.378243,0.000784,OK,,,route=urine;path_a=creatinine_excretion;path_b=urine_volume;CE=1.275;V=2.0;CC=0.638;BW=60.0;ABS=0.7;source=NHANES
+R00003,Urine,Minors,55.330000,450,urine,3.655732,3.382046,0.074865,WARN,inconsistent_param,参数不自洽：CC=0.815 vs CE/V=0.881，双路径相对差 7.49%,route=urine;path_a=creatinine_excretion;path_b=urine_volume;CE=0.925;V=1.05;CC=0.815;BW=20.0;ABS=0.7;source=ICRP89
+R00004,Urine,Mixed,23.500000,600,urine,,,,SKIP,,population_group=`Mixed` 无法确定生理参数，跳过 EDI,
+R00005,Urine,Unknown,23.500000,300,urine,,,,SKIP,,population_group=`Unknown` 无法确定生理参数，跳过 EDI,
+R00006,Blood,Adults,2.720000,800,blood,7.771429,,,WARN,exploratory_reconstruction,血砷反映短期暴露，基于血砷的 EDI 为探索性重建（exploratory reconstruction）,route=blood;formula=(BAs*Vd)/(ABS*tau);Vd=2.0;tau=1.0;ABS=0.7;bw_used=False
+R00007,Blood,Pregnant,1.990000,400,blood,5.685714,,,WARN,exploratory_reconstruction,血砷反映短期暴露，基于血砷的 EDI 为探索性重建（exploratory reconstruction）,route=blood;formula=(BAs*Vd)/(ABS*tau);Vd=2.0;tau=1.0;ABS=0.7;bw_used=False
+R00008,Blood,Adults,1.390000,300,blood,3.971429,,,WARN,exploratory_reconstruction,血砷反映短期暴露，基于血砷的 EDI 为探索性重建（exploratory reconstruction）,route=blood;formula=(BAs*Vd)/(ABS*tau);Vd=2.0;tau=1.0;ABS=0.7;bw_used=False
+R00009,CordBlood,Adults,4.890000,300,blood,,,,SKIP,cordblood_edi_skipped,脐带血反映胎儿内暴露，缺乏胎儿/新生儿药代动力学参数（fetal/neonatal Vd、τ 及经胎盘转运模型），不适用成人血路公式 → 跳过 EDI 并计数,route=cordblood;edi_not_computed;reason=fetal_parameters_unavailable
+R00010,Urine,Adults,,500,,,,,SKIP,,gm_summary 缺失，无法计算,record_id=R00010;counted=True

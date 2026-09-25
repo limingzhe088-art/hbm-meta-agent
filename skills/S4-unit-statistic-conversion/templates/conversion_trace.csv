@@ -1,0 +1,15 @@
+record_id,stat_type,value_in,unit_in,value_out,unit_out,gm_out,gsd_out,path,params,flags,status,message
+R00001,GM_GSD,23.50,ug/g Cr,23.50,ug/g Cr,23.50,2.10,reported_GM,source=reported;group=NA,,SKIP,原文已肌酐校正且直接报告 GM，零推断
+R00002,AM_SD,2.72,ug/L,2.72,ug/L,2.58,1.38,AM_SD→AMSD_to_LN→GM,AM=2.72;SD=0.90;CV=0.331,gm_from_mean_sd,OK,算术量经对数正态参数转换
+R00003,Median_IQR,7.50,ug/L,7.78,ug/g Cr,7.78,,Median_IQR→Median_as_GM→ICRP89_Adults→ug/g Cr,group=Adults;CC=0.964;path=CC_direct;source=ICRP89;strategy=as_gm,gm_from_median;unit_converted_creatinine,OK,中位数直接作为 GM 后换算尿校正
+R00004,Median_IQR,55.33,ug/L,57.40,ug/g Cr,57.40,,Median_IQR→Wan_S4→ICRP89_Adults→ug/g Cr,formula=S4;n=450;variant=minus;eta=5.6;group=Adults;CC=0.964,gm_from_median;gm_from_iqr;unit_converted_creatinine,OK,经 Wan S4 估 SD 后转 GM 再换算
+R00005,Min_Max,5.00,ug/L,5.19,ug/g Cr,5.19,,Min_Max→Wan_S3→ICRP89_Adults→ug/g Cr,formula=S3;n=NA;denom=1.9079,gm_from_range;no_n_fallback;unit_converted_creatinine,WARN,样本量缺失回退 S3，精度下降
+R00006,Median_IQR,12.00,ug/L,12.45,ug/g Cr,12.45,,Median_IQR→Wan_S6→ICRP89_Adults→ug/g Cr,formula=S6;n=NA;denom=1.349,gm_from_iqr;no_n_fallback;unit_converted_creatinine,WARN,IQR 法缺 n 回退 S6
+R00007,AM_SD,150.00,ng/L,0.15,ug/L,0.14,1.20,ng/L→ug/L→AMSD_to_LN→GM,factor=0.001;AM=0.15;SD=0.045,gm_from_mean_sd,OK,ng/L 归一为 ug/L 后转 GM
+R00008,GM_only,1.00,nmol/L,0.075,ug/L,0.075,1.00,nmol/L→ug/L→reported_GM,MW=74.92;formula=value*MW/1000,molar_conversion,SKIP,摩尔换算引入形态假设，直接取用 GM
+R00009,Median_IQR,60.00,ug/L,,,,,unknown→FAILED,p25=60;p75=40,gm_from_iqr,FAILED,q3(40) ≤ q1(60) 分位矛盾，交 GATE-3 复核
+R00010,Median_only,12.00,ug/L,,,,,Median_only→FAILED,,,FAILED,只有中位数无离散度信息 → 该记录不可合并
+R00011,Median_IQR,55.00,ug/g Cr,55.00,ug/g Cr,55.00,2.80,reported_creatinine_corrected,factor=1;adjusted=Creatinine,,SKIP,原文已用肌酐校正，不做换算
+R00012,AM_SD,4.89,ug/L,4.89,ug/L,4.52,1.35,AM_SD→AMSD_to_LN→GM,AM=4.89;SD=1.12;CV=0.229,gm_from_mean_sd,OK,脐带血样，不走尿校正
+R00013,Median_IQR,3.30,μg/g,,,,"",μg/g→FAILED,,,FAILED,组织干重基准不可当肌酐校正单位
+R00014,GM_GSD,,,,,,,reported_GM,,,FAILED,stat_type 标为 GM 但 initial_gm 为空（S3 交付违约）

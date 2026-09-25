@@ -108,6 +108,39 @@ jobs:
           fi
           echo "OK 无口径兜底"
 
+      # ── C7：随包文件必须真的入库（防"磁盘有、仓库没有"）────────────
+      # 起因：run #1 C1 变红。`.gitignore` 的负向规则锚定路径写错，
+      #       4 个模板 CSV 从未被提交；本地工作区有文件所以自检全绿，
+      #       克隆后 gen_templates.py 找不到文件。此步让同类问题在 CI 显形。
+      - name: "C7 · 随包文件已入库"
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            templates/project.yaml
+            skills/S3-extraction-standardization/templates/extraction_template.csv
+            skills/S4-unit-statistic-conversion/templates/conversion_trace.csv
+            skills/S5-weighted-pooling-edi/templates/edi_results_OUTPUT_example.csv
+            skills/S5-weighted-pooling-edi/templates/pooled_results_OUTPUT_example.csv
+            examples/arsenic-china-1980-2024/03-extraction/master_table_EXAMPLE.csv
+          )
+          fails=0
+          for f in "${required[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "MISSING-IN-CLONE  $f"; fails=$((fails+1)); continue
+            fi
+            if git ls-files --error-unmatch -- "$f" > /dev/null 2>&1; then
+              echo "SHIPPED  $f"
+            else
+              echo "NOT-IN-REPO  $f"; fails=$((fails+1))
+            fi
+          done
+          echo "--- 仓库内被忽略的 .csv（确认是否应入库）---"
+          git ls-files --others --ignored --exclude-standard \
+            | grep -i '\.csv$' || echo "（无）"
+          echo "---- C7 失败数：$fails ----"
+          test "$fails" -eq 0
+
       # ── 上传失败时的诊断 ─────────────────────────────────────────
       - name: Diagnostics on failure
         if: failure()

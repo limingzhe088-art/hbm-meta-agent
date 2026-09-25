@@ -48,9 +48,19 @@ _state/
 *.tiff
 
 # 例外：**脱敏示例与模板必须入库**（否则 CI 与使用者无法验证）
-!templates/*.csv
-!templates/*.yaml
-!templates/*.yml
+#
+# ★ 教训（CI run #1 C1 变红）：这里原写作 `!templates/*.csv`。带 `/` 的规则
+#   锚定到 .gitignore 所在目录，因此它**只**豁免根目录的 templates/，无法豁免
+#      skills/<子技能>/templates/*.csv
+#   结果 4 个模板 CSV 被上面的 `*.csv` 忽略，开发机磁盘上有（自检绿），
+#   但从未入库 → 全新克隆的 CI 里 gen_templates.py 找不到文件 → C1 失败。
+#   现在统一用 `**/`，并对每个目录显式列出允许的扩展名（不用 `*`，
+#   以免把误放进去的原始数据一起豁免）。改动前务必用
+#      git check-ignore -v <路径>    +    tests/ci_local.py 第 6 步复核。
+!**/templates/*.csv
+!**/templates/*.yaml
+!**/templates/*.yml
+!**/templates/*.md
 !examples/**/*.csv
 !examples/**/*.yaml
 !examples/**/*.yml

@@ -13,6 +13,14 @@ ci_local.py — 本地模拟 CI（在无 GitHub Actions 环境下预演 validate
   3  结构完整性（tests/verify_structure.py）
   4  跨脚本一致性（tests/verify_consistency.py --skip-selftest）
   5  源码卫生：损坏字符探针 / 硬编码路径 / 口径兜底
+  6  随包文件是否真的入库（★ 针对"磁盘有、仓库没有"的漏提交）
+
+步骤 6 的由来（CI run #1 真实事故）
+  自检在**开发机工作区**里跑，读的是磁盘上的文件；而 CI 在**全新克隆**里跑，
+  只看得到 git 追踪的文件。`.gitignore` 里一条锚定路径写错（`!templates/*.csv`
+  只豁免根目录，漏掉 `skills/<子技能>/templates/`），使 4 个模板 CSV 永不被提交。
+  后果：本地 5/5 全绿，推上去 C1 立刻变红——**本地预演没能预测 CI**。
+  本步骤把"文件到底在不在版本库里"变成显式断言，堵住这一类盲区。
 
 用法
   python tests/ci_local.py
@@ -158,12 +166,78 @@ def step_hygiene(verbose: bool) -> tuple[bool, list[str]]:
     return ok, notes
 
 
+# ── 步骤 6：随包文件必须真的入库 ──────────────────────────────────────
+# 由 CI run #1 事故确立：这些文件被脚本在自检中直接读取，若被 .gitignore
+# 拦下，全新克隆里必然缺失。任何新增"脚本要读的模板/示例"都必须加进来。
+REQUIRED_SHIPPED = [
+    "templates/project.yaml",
+    "skills/S3-extraction-standardization/templates/extraction_template.csv",
+    "skills/S4-unit-statistic-conversion/templates/conversion_trace.csv",
+    "skills/S5-weighted-pooling-edi/templates/edi_results_OUTPUT_example.csv",
+    "skills/S5-weighted-pooling-edi/templates/pooled_results_OUTPUT_example.csv",
+    "examples/arsenic-china-1980-2024/03-extraction/master_table_EXAMPLE.csv",
+]
+
+# 只做"确实存在但未被追踪"的提示，不据此判失败（避免暂存区状态影响结论）
+_TRACK_NOISE = ("__pycache__/", "_state/", ".bak")
+
+
+def _git(*argv: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *argv], cwd=str(ROOT),
+                          capture_output=True, text=True, errors="replace")
+
+
+def step_shipped_files(verbose: bool) -> tuple[bool, list[str]]:
+    """断言：脚本要读的随包文件，在 git 追踪列表里（而非只存在于本机磁盘）。"""
+    notes: list[str] = []
+    probe = _git("rev-parse", "--is-inside-work-tree")
+    if probe.returncode != 0:
+        notes.append("⏭  跳过：当前不是 git 工作树（无法判定入库状态）")
+        return True, notes
+
+    ok = True
+
+    # (a) 必需文件：既存在、又未被忽略、又被追踪
+    missing, ignored, untracked = [], [], []
+    for rel in REQUIRED_SHIPPED:
+        if not (ROOT / rel).exists():
+            missing.append(rel)
+            continue
+        if _git("check-ignore", "-q", "--", rel).returncode == 0:
+            ignored.append(rel)
+            continue
+        if _git("ls-files", "--error-unmatch", "--", rel).returncode != 0:
+            untracked.append(rel)
+    if missing:
+        ok = False
+        notes.append(f"❌ 必需文件不存在（跑生成脚本）→ {missing}")
+    if ignored:
+        ok = False
+        notes.append(f"❌ 必需文件被 .gitignore 忽略（CI 克隆后缺失）→ {ignored}")
+    if untracked:
+        ok = False
+        notes.append(f"❌ 必需文件未入库（git add 遗漏）→ {untracked}")
+    if not (missing or ignored or untracked):
+        notes.append(f"✅ {len(REQUIRED_SHIPPED)} 个随包文件均已入库且未被忽略")
+
+    # (b) 影响面提示：仓库内被 ignore 的 .csv（负向规则失效时会在这里露头）
+    ls = _git("ls-files", "--others", "--ignored", "--exclude-standard")
+    ignored_csv = [ln for ln in ls.stdout.splitlines()
+                   if ln.lower().endswith(".csv")
+                   and not any(n in ln for n in _TRACK_NOISE)]
+    if ignored_csv:
+        notes.append(f"⚠️  仓库内被忽略的 .csv（确认是否应入库）→ {ignored_csv}")
+
+    return ok, notes
+
+
 STEPS = [
     ("1  全部脚本 --self-test", step_selftests),
     ("2  模板与实现一致性", step_gen_templates),
     ("3  结构完整性", step_structure),
     ("4  跨脚本一致性", step_consistency),
     ("5  源码卫生（探针/硬编码/兜底）", step_hygiene),
+    ("6  随包文件已入库（防漏提交）", step_shipped_files),
 ]
 
 
