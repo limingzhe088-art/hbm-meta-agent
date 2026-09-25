@@ -1,0 +1,84 @@
+# 双许可说明（Dual License）
+
+本项目采用 **代码与文档分许可** 的方式发布。
+
+---
+
+## 一、代码部分 —— MIT License
+
+适用于：所有 `.py` 脚本、`.yml` 工作流、`.yaml` 配置、`.cff` 元数据。
+
+```
+MIT License
+
+Copyright (c) 2026 HBM-Meta-Agent contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+## 二、文档部分 —— CC BY 4.0
+
+适用于：所有 `.md` 文档（`SKILL.md`、`references/`、`templates/`、`examples/`
+下的说明文档、`README.md`、`CONTRIBUTING.md`、`CHANGELOG.md`、本文件之外的说明性文本）。
+
+**Creative Commons Attribution 4.0 International (CC BY 4.0)**
+
+你可以自由地：
+- **共享** —— 以任何媒介或格式复制和分发本材料
+- **演绎** —— 修改、转换或以本材料为基础进行创作
+
+惟须遵守以下条件：
+- **署名** —— 必须给出适当的署名，提供指向本许可的链接，并指明是否作了修改。
+  你可以以任何合理的方式这样做，但不得以任何方式暗示许可人认可你或你的使用。
+
+许可全文见：<https://creativecommons.org/licenses/by/4.0/legalcode>
+
+---
+
+## 三、为什么分许可
+
+| 部分 | 许可 | 理由 |
+|---|---|---|
+| 代码 | MIT | 最宽松、最易被工具链与商业环境接受；脚本应能被自由嵌入任何研究流程 |
+| 文档 | CC BY 4.0 | 学术文档的通行做法；鼓励改编与再分发，同时要求署名以保留溯源 |
+
+---
+
+## 四、使用者的义务（简述）
+
+1. **引用**：在学术产出中使用本工作包时，请按 `CITATION.cff` 的格式引用。
+2. **署名**：改编文档时保留原始署名与本许可声明。
+3. **无担保**：本工作包按"现状"提供。**它不构成统计或临床建议**；
+   使用者须自行验证结果适用于其研究场景。
+
+---
+
+## 五、第三方内容
+
+- **ICRP Publication 89 的参考值**（`skills/S4-.../references/icrp89_urine_reference.md`）：
+  表中的数值属事实性数据，引用自 ICRP 89 公开出版物。使用时请直接引用 ICRP 原文。
+- **Wan et al. (2014) 的公式**（`skills/S4-.../references/wan2014_formulas.md`）：
+  公式的**实现**属本项目的 MIT 代码；公式本身属该论文，学术使用时请引用原文。
+- **PRISMA 2020 / AHRQ 量表 / Wan 2014**：均为公开方法学工具，本项目仅提供其实现与操作化说明。
+
+---
+
+**如有许可相关疑问，请开 Issue 讨论。**

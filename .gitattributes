@@ -1,0 +1,56 @@
+# =============================================================================
+# HBM-Meta-Agent — 行尾与文本属性规范化
+#
+# 为什么必须存在
+#   Windows 上 Git 默认 core.autocrlf=true，会把仓库里的 LF 在工作区改成 CRLF。
+#   后果：**在 Windows 上重新 clone 后，脚本里的文本比较断言会失败**
+#   （自检含大量多行字符串与精确文本匹配，行尾不同即不等）。
+#   本文件强制仓库内一律 LF，从而让任何平台 clone 出来的内容都一致，
+#   `--self-test` 与 `tests/ci_local.py` 才能跨平台稳定通过。
+# =============================================================================
+
+# 默认：所有文本文件在仓库内规范为 LF
+* text=auto eol=lf
+
+# ── 明确为文本（强制 LF）─────────────────────────────────────────────
+*.py        text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.json      text eol=lf
+*.csv       text eol=lf
+*.tsv       text eol=lf
+*.cff       text eol=lf
+*.txt       text eol=lf
+*.toml      text eol=lf
+*.cfg       text eol=lf
+*.ini       text eol=lf
+LICENSE     text eol=lf
+.gitignore  text eol=lf
+.gitattributes text eol=lf
+
+# CSV 不做 diff 文本化处理（避免 Git 试图合并数据行）
+*.csv -diff
+
+# ── 明确为二进制（不做行尾转换）──────────────────────────────────────
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.xlsx      binary
+*.xls       binary
+*.xlsm      binary
+*.sav       binary
+*.dta       binary
+*.docx      binary
+*.pptx      binary
+*.zip       binary
+*.7z        binary
+*.tif       binary
+*.tiff      binary
+
+# ── 语言标注（GitHub 统计更准）──────────────────────────────────────
+*.py        linguist-language=Python
+*.md        linguist-documentation

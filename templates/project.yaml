@@ -1,0 +1,104 @@
+project:
+  name: "Demo internal exposure project"
+  analyte: "As"
+  country: "China"
+  matrix_scope: ["Urine", "Blood", "CordBlood"]
+  config_version: "1.0.0"
+  contract_version: "1.0.0"
+
+period_scheme:
+  name: "four_era"
+  boundaries:
+    - {label: "1980-2000", start: 1980, end: 2000}
+    - {label: "2001-2010", start: 2001, end: 2010}
+    - {label: "2011-2020", start: 2011, end: 2020}
+    - {label: "2021-2024", start: 2021, end: 2024}
+  freeze_date: "2026-07-19"
+  boundary_policy: "inclusive"
+  out_of_range: "exclude"
+  representative_year_rule: "start"
+
+region_map:
+  Southwest: ["四川省", "云南省", "贵州省", "重庆市", "西藏自治区"]
+  Northwest: ["陕西省", "甘肃省", "青海省", "宁夏回族自治区", "新疆维吾尔自治区"]
+  North: ["北京市", "天津市", "河北省", "山西省", "内蒙古自治区"]
+  Central: ["河南省", "湖北省", "湖南省"]
+  East: ["上海市", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省", "台湾省"]
+  South: ["广东省", "广西壮族自治区", "海南省", "香港特别行政区", "澳门特别行政区"]
+  Northeast: ["辽宁省", "吉林省", "黑龙江省"]
+
+unit_policy:
+  Urine: {target: "ug/g Cr"}
+  Blood: {target: "ug/L"}
+  CordBlood: {target: "ug/L"}
+  default_conflict_resolution: "prefer_creatinine_corrected"
+
+# =============================================================================
+# 标准化口径（★ 必需区块：三键都必填，缺失即硬错误）
+#
+# 为什么必需而非可选：三者都被 S4 依赖。若设为可选，某脚本路径可能不读它而
+# 用内置默认值 —— 那就重蹈"兜底"的覆辙（看起来跑通、但口径是错的）。
+# 显式配置成本三行 YAML，漏配的代价是静默的口径不一致。
+# =============================================================================
+standardization:
+
+  # ① 中位数如何转 GM
+  #    as_gm  —— 直接把中位数当作 GM（对数正态下中位数 = 几何均值）；更稳，常用
+  #    via_wan —— 经 Wan 公式先估 Mean/SD 再转 GM；能得到 GSD，但引入估算误差
+  #    影响：改变 gm_summary 与 gsd_summary → 改变所有分层结果与「仅直接报告 GM」子集
+  #    改动后果：须 bump config_version 并重算 S4 → S5 → S6
+  median_to_gm_strategy: "as_gm"
+
+  # ② Wan S1–S5 公式的 ± 变体
+  #    minus —— 减号变体（保守）；本工作包默认，与主流实现一致
+  #    ⚠️ plus **尚未实现**：Wan 2014 的 ± 变体在 n 较小时数值分支不同，
+  #       本工作包只做了减号变体；填 "plus" 会被 project_config 拒绝，
+  #       即便绕过校验，wan_convert.py 也会**显式抛错**（不做静默等价）。
+  #    影响：改变由 Wan 估算得到的 SD/GSD → 影响误差线与敏感性分层
+  #    改动后果：须 bump config_version 并重算
+  wan_variant: "minus"
+
+  # ③ 尿校正路径（两条数学等价路径，但参数舍入不同）
+  #    CC_direct     —— 浓度(μg/L) ÷ 肌酐浓度 CC(g/L)
+  #    CEV_equivalent—— 浓度(μg/L) × 每日尿量 V ÷ 每日肌酐排泄量 CE
+  #    影响：参数表 4 位小数下两条路径相差约 0.03%；
+  #          参数不自洽的人群档（如 Minors，CC=0.815 vs CE/V=0.881）可达 8%
+  #    约束：同一项目内**不得混用**；改动须 bump config_version 并重算
+  creatinine_path_mode: "CC_direct"
+
+weighting:
+  method: "sample_size"
+  log_base: "natural"
+  percentile_method: "weighted"
+
+validation:
+  verified_ratio_threshold: 0.90
+
+urine_reference:
+  source: "ICRP Publication 89"
+  table:
+    - {population_group: "Infant",     age: 1,  ce_g_day: 0.11,  volume_l_day: 0.4,  creat_g_l: 0.275}
+    - {population_group: "Adults",     age: 18, ce_g_day: 1.35,  volume_l_day: 1.4,  creat_g_l: 0.964}
+    - {population_group: "Adult_Male", age: 18, sex: "Male",   ce_g_day: 1.7,  volume_l_day: 1.6, creat_g_l: 1.063}
+    - {population_group: "Adult_Female", age: 18, sex: "Female", ce_g_day: 1.0, volume_l_day: 1.2, creat_g_l: 0.833}
+    - {population_group: "Minors",     age: null, ce_g_day: 0.925, volume_l_day: 1.05, creat_g_l: 0.815}
+    - {population_group: "Pregnant",   age: null, sex: "Female", ce_g_day: 1.275, volume_l_day: 2.0, creat_g_l: 0.638, source: "NHANES"}
+
+edi:
+  absorption_fraction_ABS: 0.7
+  body_weight:
+    Adults: 60.0
+    Pregnant: 60.0
+    Minors: 20.0
+    Elderly: 60.0
+  urine_route:
+    method_primary: "creatinine_excretion"
+    method_secondary: "urine_volume"
+  blood_route:
+    vd_l_per_kg: 2.0
+    tau_day: 1.0
+    formula: "(BAs * Vd) / (ABS * tau)"
+    interpretation: "exploratory"
+  cordblood_route:
+    enabled: false
+    reason: "缺乏胎儿/新生儿药代动力学参数 → 方案 A：跳过并计数"

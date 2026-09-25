@@ -1,0 +1,31 @@
+# HBM-Meta-Agent — Python 依赖（**单栈，无 R 依赖**）
+#
+# 安装：pip install -r requirements.txt
+#
+# 说明：核心脚本对 **纯标准库** 的依赖很高（hashlib / csv / json / argparse /
+# datetime / re / statistics），下列第三方包按"必需 / 可选"分组。
+# CI 只安装"必需"组即可跑通全部 --self-test。
+
+# ── 必需 ─────────────────────────────────────────────────────────────
+# project.yaml 解析（shared/project_config.py）—— 缺失即硬错误，不做兜底
+PyYAML>=6.0
+
+# 读取主表 .xlsx（validate_table / convert_units / weighted_gm /
+# edi_calculation / snapshot / audit_numbers / dedup_screen / sensitivity）
+openpyxl>=3.1.0
+
+# ── 可选（增强；未安装时脚本自动降级，不影响 --self-test）────────────
+# 统计计算（加权分位数、回归）——当前实现用标准库完成，
+# 如需与 scipy 结果交叉验证可安装
+# scipy>=1.11.0
+#
+# 表格与矩阵运算——当前实现用标准库完成，
+# 如需处理超大表或 pandas 工作流可安装
+# pandas>=2.0.0
+# numpy>=1.24.0
+#
+# 文档与文献库解析（STEP4-TODO.md F3，尚未实现）
+# python-docx>=1.1.0
+
+# ── 开发/CI（可选）────────────────────────────────────────────────
+# pytest>=8.0.0

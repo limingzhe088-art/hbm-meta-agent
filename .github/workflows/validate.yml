@@ -1,0 +1,116 @@
+name: validate
+
+# HBM-Meta-Agent — CI 校验
+# 目标：**防回归**。任何脚本自检失败、模板与代码不一致、结构破坏、跨脚本标记不一致
+#       都必须让 CI 变红（见 STEP4-TODO.md C1–C6）。
+#
+# 注意：CI 只安装"必需"依赖（PyYAML + openpyxl），核心脚本对标准库依赖很高。
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # ── C0：依赖安装（仅必需项；缺失即失败，不做降级）──────────────
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install PyYAML openpyxl
+
+      # ── C1：全部脚本 --self-test ───────────────────────────────────
+      - name: "C1 · 全部脚本 --self-test"
+        shell: bash
+        run: |
+          set -euo pipefail
+          fails=0
+          run_one() {
+            local f="$1"
+            if [ ! -f "$f" ]; then echo "MISSING: $f"; fails=$((fails+1)); return; fi
+            if python "$f" --self-test > /tmp/out.txt 2>&1; then
+              echo "PASS  $f  $(grep -o 'self-test .*' /tmp/out.txt | head -1)"
+            else
+              echo "FAIL  $f"; tail -5 /tmp/out.txt; fails=$((fails+1))
+            fi
+          }
+          for f in \
+            shared/project_config.py \
+            shared/inferred_flags.py \
+            shared/snapshot.py \
+            skills/S3-extraction-standardization/scripts/validate_table.py \
+            skills/S4-unit-statistic-conversion/scripts/wan_convert.py \
+            skills/S4-unit-statistic-conversion/scripts/convert_units.py \
+            skills/S5-weighted-pooling-edi/scripts/weighted_gm.py \
+            skills/S5-weighted-pooling-edi/scripts/edi_calculation.py \
+            skills/S5-weighted-pooling-edi/scripts/gen_templates.py \
+            skills/S6-qc-audit-revision/scripts/audit_numbers.py \
+            skills/S6-qc-audit-revision/scripts/dedup_screen.py \
+            skills/S6-qc-audit-revision/scripts/sensitivity.py \
+            skills/S6-qc-audit-revision/scripts/verify_dois.py \
+            skills/S6-qc-audit-revision/scripts/citation_crosswalk.py ; do
+            run_one "$f"
+          done
+          echo "---- C1 失败数：$fails ----"
+          test "$fails" -eq 0
+
+      # ── C2：模板列对齐 + 数值一致性（模板禁止手写）────────────────
+      - name: "C2 · 模板与实现一致性"
+        run: python skills/S5-weighted-pooling-edi/scripts/gen_templates.py --check
+
+      # ── C3/C4/C5/S6：结构与 frontmatter ──────────────────────────
+      - name: "C3–C5 · 结构完整性（frontmatter / 目录 / 名称）"
+        run: python tests/verify_structure.py
+
+      # ── 跨脚本一致性（A1–A4 最终验收，C6 自检已在上方跑过）────────
+      - name: "A5 · 跨脚本一致性核验"
+        run: python tests/verify_consistency.py --skip-selftest
+
+      # ── 源码卫生：损坏字符探针 + 硬编码路径 + 无兜底 ───────────────
+      # 注：`tests/ci_local.py`（本地 CI 预演）用 Python 实现了同样三项检查，
+      #     但它自身**包含探针模式字符串**，故其扫描需自我排除；
+      #     本 workflow 的 grep 只扫 shared/skills/tests 下的 .py，不含 .github/，
+      #     因此无自指问题。两条路径结论一致。
+      - name: "源码卫生（探针 / 硬编码 / 兜底）"
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "── 损坏字符探针 ──"
+          if grep -rEn '\b(chdck|gith|rogs|loger|geighted|Falsd|Nond|negline|hdaddr|ddf|ddi)\b' \
+               --include='*.py' shared skills tests ; then
+            echo "FAIL: 发现损坏字符（见 agent/routing.md §2.6）"; exit 1
+          fi
+          echo "OK 无损坏字符"
+          echo "── 硬编码路径 ──"
+          if grep -rEn 'E:\\|重金属暴露|/Users/|C:\\\\Users' --include='*.py' shared skills tests ; then
+            echo "FAIL: 发现硬编码路径（见 STEP4-TODO.md A2）"; exit 1
+          fi
+          echo "OK 无硬编码路径"
+          echo "── 口径兜底（DEFAULT_*）──"
+          if grep -rEn '^(DEFAULT_CONFIG|DEFAULT_PERIOD_SCHEME|DEFAULT_EDI_PARAMS|DEFAULT_UNIT_POLICY)\s*=' \
+               --include='*.py' shared skills ; then
+            echo "FAIL: 发现口径默认值兜底（见 STEP4-TODO.md A1）"; exit 1
+          fi
+          echo "OK 无口径兜底"
+
+      # ── 上传失败时的诊断 ─────────────────────────────────────────
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          echo "=== 目录结构 ==="
+          find . -name '__pycache__' -prune -o -type f -print | sort | head -100

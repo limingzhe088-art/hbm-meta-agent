@@ -1,0 +1,66 @@
+cff-version: 1.2.0
+message: "If you use this work package in academic work, please cite it as below."
+title: "HBM-Meta-Agent: Human Biomonitoring Meta-Analysis Agent"
+abstract: >-
+  An agent work package for meta-analyses of human internal-exposure biomarker
+  concentrations (urine, blood, cord blood, and other matrices). It orchestrates
+  the full pipeline from search-strategy construction through screening, quality
+  assessment, AI-assisted data extraction with mandatory human proofing, unit and
+  statistic standardization (including Wan et al. 2014 formulas S1-S7 and ICRP 89
+  urine-correction reference values), sample-size-weighted geometric-mean pooling,
+  estimated daily intake, sensitivity analysis, and a closed-loop reviewer-revision
+  engine. Ships with a frozen data contract, six human quality gates, reproducible
+  Python scripts with self-tests, and six independently triggerable sub-skills.
+  Analyte-, matrix-, population- and region-agnostic.
+type: software
+authors:
+  - family-names: "HBM-Meta-Agent contributors"
+repository-code: "https://github.com/limingzhe088-art/hbm-meta-agent"
+url: "https://github.com/limingzhe088-art/hbm-meta-agent"
+license: MIT
+license-url: "https://github.com/limingzhe088-art/hbm-meta-agent/blob/main/LICENSE"
+keywords:
+  - meta-analysis
+  - systematic-review
+  - human-biomonitoring
+  - internal-exposure
+  - biomarker
+  - arsenic
+  - cadmium
+  - lead
+  - PFOA
+  - geometric-mean
+  - PRISMA
+  - AHRQ
+  - risk-of-bias
+  - reproducibility
+  - research-software
+version: "1.0.0"
+date-released: "2026-07-19"
+references:
+  - type: article
+    title: "Estimating the sample mean and standard deviation from the sample size, median, range and/or interquartile range"
+    authors:
+      - family-names: Wan
+        given-names: Xiang
+      - family-names: Wang
+        given-names: Wenqian
+      - family-names: Liu
+        given-names: Jiming
+      - family-names: Tong
+        given-names: Tiejun
+    journal: "BMC Medical Research Methodology"
+    volume: 14
+    start: 135
+    year: 2014
+    doi: "10.1186/1471-2288-14-135"
+  - type: article
+    title: "The PRISMA 2020 statement: an updated guideline for reporting systematic reviews"
+    authors:
+      - family-names: Page
+        given-names: Matthew J.
+    journal: "BMJ"
+    volume: 372
+    start: n71
+    year: 2021
+    doi: "10.1136/bmj.n71"
