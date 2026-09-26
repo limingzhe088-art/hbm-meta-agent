@@ -5,6 +5,38 @@
 
 ---
 
+## [Unreleased]
+
+### Added · S1-search-strategy 完整实现（STEP4-TODO.md F5 之 S1 部分 / F3 的 RIS·EndNote·BibTeX 部分）
+
+- `shared/record_schema.py` — 统一题录字段 / 来源枚举 / `raw_row_hash` 算法的**单一来源**
+  （11 字段；`SUMMARY_FIELDS` 与待回填提示语同源于此），自带 41 项自检
+- `skills/S1-search-strategy/scripts/`
+  - `generate_search_terms.py` — 从 `project.yaml → search`（条件必需区块，缺失即硬错误）
+    生成 PubMed/WoS/Scopus/Embase/CNKI/万方检索式**草稿** + GATE-1 人工检查清单；
+    中文词缺失时输出"待人工补充"占位，不编造中文词
+  - `parse_ris.py` / `parse_enl.py` / `parse_bibtex.py` — 题录解析器 → 统一格式 CSV；
+    手解析（无新依赖）；`.enl` 二进制等不支持格式**显式拒绝**；warnings 不中断
+  - `merge_sources.py` — 多库合并 + `source_summary.csv`（导出数实算；
+    检索式/命中数**仅取自人工检索日志**，AI 不代填）；疑似重复只计数，去重裁决在 S2
+- `skills/S1-search-strategy/` 文档 — `SKILL.md`、`search-strategy.md`
+  （可复现检索记录规范 + PRISMA identification 要求）、
+  `references/database_syntax.md`（六库语法差异 + 导出格式建议）、
+  `references/exclusion_word_bank.md`（四组排除词银行 + 过度杀伤预警）
+- `templates/project.yaml` 与示例配置新增 `search` 区块（砷示例词表）
+- `gen_templates.py`（唯一模板生成器）新增 S1 模板：`raw_records_template.csv`、
+  `source_summary_template.csv`（禁止手写，`--check` 进 CI）
+- CI：`ci_local.py` / `validate.yml` 新增 6 个自检目标与 2 个随包模板断言；
+  `verify_structure.py` 将 S1 移入已实现子技能
+
+### 说明
+
+- S2（AI 预处理 + 人工闸门筛选）仍未实现，见 STEP4-TODO.md F5
+- 主表契约（`data-contract.md`）与闸门定义无变更；S1 的题录 `source_database`
+  枚举含 Embase，与主表列枚举是两个层级（见 `record_schema.py` 模块注释）
+
+---
+
 ## [1.0.0] — 2026-07-19
 
 首个可用版本。**从想法到文章**的完整流水线：把一类真实项目（中国一般人群内暴露砷

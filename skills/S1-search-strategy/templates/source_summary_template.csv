@@ -1,0 +1,3 @@
+source_database,search_string,search_date,hit_count,exported_count,note
+PubMed,"(""Arsenic""[MeSH Terms] OR ""arsenic""[tiab]) AND (""urine""[tiab] OR ""urinary""[tiab]) AND (""human biomonitoring""[tiab])",2026-07-19,3120,3120,检索式示例：请以 GATE-1 确认后的最终检索式原文为准
+WebOfScience,,,,1875,检索式/命中数待人工回填（GATE-1）

@@ -102,3 +102,47 @@ edi:
   cordblood_route:
     enabled: false
     reason: "缺乏胎儿/新生儿药代动力学参数 → 方案 A：跳过并计数"
+
+# =============================================================================
+# 检索策略（★ 条件必需区块：使用 S1 的 generate_search_terms.py 时必需，
+# 缺失即硬错误。其余脚本不读取本区块。）
+#
+# 本区块承载"检索词表"：暴露物/基质/人群/暴露评估词与排除词银行。
+# generate_search_terms.py 据此生成各数据库检索式草稿（DRAFT）；
+# 最终检索式、实际执行与命中数由人工完成并登记（GATE-1）。
+#
+# 字段说明：
+#   databases        —— 要草拟检索式的库；允许：PubMed/WebOfScience/Scopus/Embase/CNKI/Wanfang
+#   year_from/to     —— 发表年过滤窗口（与 period_scheme 的"采样年"分期是两回事）
+#   analytes/matrices —— 每项 {name, synonyms, [mesh], [synonyms_zh]}
+#                        mesh 供 PubMed/Embase 叙词；synonyms_zh 供中文库；缺失则
+#                        中文库输出"待人工补充"占位（脚本不编造中文词）
+#   exclusion_terms  —— 可选；四组 animal/cell/occupational/clinical
+# =============================================================================
+search:
+  databases: ["PubMed", "WebOfScience", "Scopus", "Embase", "CNKI", "Wanfang"]
+  year_from: 1980
+  year_to: 2024
+  analytes:
+    - name: "arsenic"
+      mesh: ["Arsenic", "Arsenic Poisoning"]
+      synonyms: ["arsenic", "arsenic*", "inorganic arsenic", "total arsenic"]
+      synonyms_zh: ["砷", "总砷", "无机砷", "尿砷", "血砷"]
+  matrices:
+    - name: "urine"
+      mesh: ["Urine"]
+      synonyms: ["urine", "urinary", "urinalysis"]
+      synonyms_zh: ["尿", "尿液", "尿样"]
+    - name: "blood"
+      mesh: ["Blood", "Cord Blood"]
+      synonyms: ["blood", "cord blood", "serum", "plasma"]
+      synonyms_zh: ["血", "血液", "脐带血", "血清", "血浆"]
+  exposure_terms: ["human biomonitoring", "biological monitoring", "internal exposure",
+                   "exposure assessment", "biomonitoring"]
+  population_keywords: ["general population", "adults", "children", "pregnant women",
+                        "residents", "community-dwelling"]
+  exclusion_terms:
+    animal: ["mice", "mouse", "rats", "zebrafish", "in vivo"]
+    cell: ["in vitro", "cell line", "cell culture"]
+    occupational: ["workers", "occupational exposure", "smelter", "miners"]
+    clinical: ["case report", "case reports", "clinical trial"]

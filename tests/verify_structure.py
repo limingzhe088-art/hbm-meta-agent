@@ -41,9 +41,10 @@ SUB_SKILLS = [
     "S6-qc-audit-revision",
 ]
 
-# ★ 已实现的子技能（含 SKILL.md）。S1/S2 目前仅有目录骨架，
+# ★ 已实现的子技能（含 SKILL.md）。S2 目前仅有目录骨架，
 #   属**规划中**：其检查降级为 WARN（不使 CI 变红），完成实现后移入本列表即可。
 IMPLEMENTED_SUB_SKILLS = [
+    "S1-search-strategy",
     "S3-extraction-standardization",
     "S4-unit-statistic-conversion",
     "S5-weighted-pooling-edi",

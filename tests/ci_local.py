@@ -53,7 +53,13 @@ ROOT = Path(__file__).resolve().parent.parent
 SELFTEST_TARGETS = [
     "shared/project_config.py",
     "shared/inferred_flags.py",
+    "shared/record_schema.py",
     "shared/snapshot.py",
+    "skills/S1-search-strategy/scripts/generate_search_terms.py",
+    "skills/S1-search-strategy/scripts/parse_ris.py",
+    "skills/S1-search-strategy/scripts/parse_enl.py",
+    "skills/S1-search-strategy/scripts/parse_bibtex.py",
+    "skills/S1-search-strategy/scripts/merge_sources.py",
     "skills/S3-extraction-standardization/scripts/validate_table.py",
     "skills/S4-unit-statistic-conversion/scripts/wan_convert.py",
     "skills/S4-unit-statistic-conversion/scripts/convert_units.py",
@@ -179,6 +185,8 @@ def step_hygiene(verbose: bool) -> tuple[bool, list[str]]:
 # 拦下，全新克隆里必然缺失。任何新增"脚本要读的模板/示例"都必须加进来。
 REQUIRED_SHIPPED = [
     "templates/project.yaml",
+    "skills/S1-search-strategy/templates/raw_records_template.csv",
+    "skills/S1-search-strategy/templates/source_summary_template.csv",
     "skills/S3-extraction-standardization/templates/extraction_template.csv",
     "skills/S4-unit-statistic-conversion/templates/conversion_trace.csv",
     "skills/S5-weighted-pooling-edi/templates/edi_results_OUTPUT_example.csv",

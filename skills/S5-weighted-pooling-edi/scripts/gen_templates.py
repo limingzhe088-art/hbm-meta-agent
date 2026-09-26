@@ -3,6 +3,12 @@
 """
 gen_templates.py — 从实现代码生成 CSV 模板（禁止手写模板值）
 
+本脚本是**全工作包唯一的模板生成器**（STEP4-TODO.md C2：模板禁止手写）：
+  S5  templates/edi_results_OUTPUT_example.csv
+  S5  templates/pooled_results_OUTPUT_example.csv
+  S1  skills/S1-search-strategy/templates/raw_records_template.csv
+  S1  skills/S1-search-strategy/templates/source_summary_template.csv
+
 动机
   手写 CSV 模板反复出现两类错误：列错位与数值与代码不一致。
   本脚本按"已提交模板纪律"（STEP4-TODO.md **C2**）改为：模板值**一律由实现代码算出**。
@@ -36,13 +42,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import edi_calculation as edi  # noqa: E402
 import weighted_gm as wgm      # noqa: E402
 
+# shared/record_schema.py —— S1 题录字段的单一来源
+_REPO = Path(__file__).resolve().parent.parent.parent.parent
+sys.path.insert(0, str(_REPO / "shared"))
+from record_schema import (  # noqa: E402
+    NOTE_PENDING_FILL, RECORD_FIELDS, SUMMARY_FIELDS, compute_row_hash,
+)
+
 TPL_DIR = Path(__file__).resolve().parent.parent / "templates"
+S1_TPL_DIR = _REPO / "skills" / "S1-search-strategy" / "templates"
 
 # ★ 模板命名约定：**输出示例**必须带 `_OUTPUT_example` 后缀，
 #   以免被误当作某个 Skill 的**输入**（例如把 S5 的合并结果当 S4 的输入）。
 #   输入模板（如 S3 的 extraction_template.csv）则不带该后缀。
 EDI_TPL_NAME = "edi_results_OUTPUT_example.csv"
 POOLED_TPL_NAME = "pooled_results_OUTPUT_example.csv"
+RAW_TPL_NAME = "raw_records_template.csv"
+SUMMARY_TPL_NAME = "source_summary_template.csv"
 
 # ---------------------------------------------------------------------------
 # 契约枚举（用于校验）
@@ -184,6 +200,46 @@ def build_pooled_rows(scheme: dict) -> tuple[list[list[str]], list[str], list[st
 
 
 # ===========================================================================
+# 2b. S1 检索题录模板（字段与哈希取自 shared/record_schema.py 单一来源）
+# ===========================================================================
+
+def build_raw_records_rows() -> tuple[list[str], list[list[str]]]:
+    """raw_records_template：统一字段表头 + 2 条示例题录（哈希由代码算出）。"""
+    rec1 = {
+        "record_id": "pubmed-00001", "source_database": "PubMed",
+        "title": "Urinary arsenic in general population: a national survey",
+        "abstract": "Background: national biomonitoring data on arsenic exposure "
+                    "remain limited. Methods: we measured urinary arsenic.",
+        "authors": "Zhang, San; Li, Si", "year": "2020",
+        "doi": "10.1234/example.2020.001", "pmid": "32456789",
+        "journal": "Environmental Research", "keywords": "arsenic; biomonitoring",
+    }
+    rec1["raw_row_hash"] = compute_row_hash(rec1["title"], rec1["abstract"])
+    rec2 = {
+        "record_id": "wos-00001", "source_database": "WebOfScience",
+        "title": "Blood cadmium in parturients", "abstract": "",
+    }
+    rec2["raw_row_hash"] = compute_row_hash(rec2["title"], rec2["abstract"])
+    rows = []
+    for rec in (rec1, rec2):
+        rows.append([rec.get(f, "") for f in RECORD_FIELDS])
+    return list(RECORD_FIELDS), rows
+
+
+def build_source_summary_rows() -> tuple[list[str], list[list[str]]]:
+    """source_summary_template：检索式/命中数由人工回填（GATE-1），导出数示例。"""
+    rows = [
+        ["PubMed",
+         '("Arsenic"[MeSH Terms] OR "arsenic"[tiab]) AND ("urine"[tiab] OR '
+         '"urinary"[tiab]) AND ("human biomonitoring"[tiab])',
+         "2026-07-19", "3120", "3120",
+         "检索式示例：请以 GATE-1 确认后的最终检索式原文为准"],
+        ["WebOfScience", "", "", "", "1875", NOTE_PENDING_FILL],
+    ]
+    return list(SUMMARY_FIELDS), rows
+
+
+# ===========================================================================
 # 3. 写盘与校验
 # ===========================================================================
 
@@ -314,9 +370,14 @@ def run_self_test() -> int:
           any("解释谨慎" in r[ni] for r in pooled_rows))
 
     print("\n[9] 与已提交文件的一致性（若文件存在）")
-    for name, header, rows in [(EDI_TPL_NAME, EDI_HEADER, edi_rows),
-                               (POOLED_TPL_NAME, pooled_header, pooled_rows)]:
-        p = TPL_DIR / name
+    tpl_specs = [(TPL_DIR / EDI_TPL_NAME, EDI_HEADER, edi_rows),
+                 (TPL_DIR / POOLED_TPL_NAME, pooled_header, pooled_rows)]
+    raw_header, raw_rows = build_raw_records_rows()
+    sum_header, sum_rows = build_source_summary_rows()
+    tpl_specs += [(S1_TPL_DIR / RAW_TPL_NAME, raw_header, raw_rows),
+                  (S1_TPL_DIR / SUMMARY_TPL_NAME, sum_header, sum_rows)]
+    for p, header, rows in tpl_specs:
+        name = p.name
         if not p.exists():
             check(f"{name} 存在", False, "文件缺失（可跑 --write 生成）")
             continue
@@ -327,6 +388,22 @@ def run_self_test() -> int:
               "" if same_header else f"文件={h2[:4]}… 生成={header[:4]}…")
         check(f"{name} 数据与生成一致", same_rows,
               "" if same_rows else f"文件 {len(r2)} 行 / 生成 {len(rows)} 行")
+
+    print("\n[10] S1 题录模板与 record_schema 单一来源对齐")
+    check("raw 模板表头 == RECORD_FIELDS", raw_header == RECORD_FIELDS)
+    check("summary 模板表头 == SUMMARY_FIELDS", sum_header == SUMMARY_FIELDS)
+    errs = check_alignment("raw_records", raw_header, raw_rows)
+    errs += check_alignment("source_summary", sum_header, sum_rows)
+    check("S1 模板列数一致", not errs, "; ".join(errs) or "全部一致")
+    h_idx = raw_header.index("raw_row_hash")
+    t_idx = raw_header.index("title")
+    a_idx = raw_header.index("abstract")
+    recompute_ok = all(
+        compute_row_hash(r[t_idx], r[a_idx]) == r[h_idx] for r in raw_rows)
+    check("示例行哈希可由 compute_row_hash 复现", recompute_ok)
+    check("示例行 title 均非空", all(r[t_idx] for r in raw_rows))
+    check("待回填提示语来自单一来源常量",
+          any(r[sum_header.index("note")] == NOTE_PENDING_FILL for r in sum_rows))
 
     print("\n" + "-" * 70)
     failed = [c for c in checks if not c[1]]
@@ -352,11 +429,18 @@ def main(argv=None) -> int:
         scheme = wgm.FIXTURE_PERIOD_SCHEME
         edi_rows = build_edi_rows()
         pooled_rows, pooled_header, _ = build_pooled_rows(scheme)
+        raw_header, raw_rows = build_raw_records_rows()
+        sum_header, sum_rows = build_source_summary_rows()
         TPL_DIR.mkdir(parents=True, exist_ok=True)
+        S1_TPL_DIR.mkdir(parents=True, exist_ok=True)
         write_csv(TPL_DIR / EDI_TPL_NAME, EDI_HEADER, edi_rows)
         write_csv(TPL_DIR / POOLED_TPL_NAME, pooled_header, pooled_rows)
+        write_csv(S1_TPL_DIR / RAW_TPL_NAME, raw_header, raw_rows)
+        write_csv(S1_TPL_DIR / SUMMARY_TPL_NAME, sum_header, sum_rows)
         print(f"已生成：{TPL_DIR / EDI_TPL_NAME}")
         print(f"已生成：{TPL_DIR / POOLED_TPL_NAME}")
+        print(f"已生成：{S1_TPL_DIR / RAW_TPL_NAME}")
+        print(f"已生成：{S1_TPL_DIR / SUMMARY_TPL_NAME}")
         return 0
 
     return run_self_test()

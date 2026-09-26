@@ -1,0 +1,3 @@
+record_id,source_database,title,abstract,authors,year,doi,pmid,journal,keywords,raw_row_hash
+pubmed-00001,PubMed,Urinary arsenic in general population: a national survey,Background: national biomonitoring data on arsenic exposure remain limited. Methods: we measured urinary arsenic.,"Zhang, San; Li, Si",2020,10.1234/example.2020.001,32456789,Environmental Research,arsenic; biomonitoring,4f891bdb9edda040091e12b5d66f346d433d6b58a2e1da08e0b568c790c56787
+wos-00001,WebOfScience,Blood cadmium in parturients,,,,,,,,0ecb3718376d4c60a0eb3c38c689e39e53741822ec07c6e4639578433e51bf60
